@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <title>To do list</title>
+  <meta name="description" content="ניהול משימות אישי: היום, מחר, השבוע, להמשך">
+  <meta name="theme-color" content="#ff7aac">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="To do list">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700;800&family=Heebo:wght@400;600;700;800&display=swap">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="header-row">
+      <div class="header-text">
+        <h1 class="app-title">To do list</h1>
+        <div class="sub-row">
+          <span id="tab-heading" class="sticker tab-heading" data-cat="today">היום</span>
+          <span id="open-count" class="sticker yellow open-count"></span>
+          <span id="date-line" class="date-line"></span>
+        </div>
+      </div>
+      <button id="sound-btn" class="icon-btn sound-btn" type="button" aria-pressed="true" aria-label="צלילים פועלים – לחיצה להשתקה">
+        <svg class="ic-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <svg class="ic-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/><path d="M15.5 9.5l5 5m0-5l-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <button id="menu-btn" class="icon-btn" aria-label="תפריט" aria-haspopup="true" aria-expanded="false">⋯</button>
+    </div>
+    <div id="menu" class="menu" role="menu" hidden>
+      <button role="menuitem" data-action="export">⬇️ ייצוא גיבוי (JSON)</button>
+      <button role="menuitem" data-action="import">⬆️ שחזור מגיבוי</button>
+      <button role="menuitem" data-action="clear-done">🧹 מחיקת שהושלמו בלשונית</button>
+    </div>
+    <input id="import-file" type="file" accept="application/json,.json" hidden>
+  </header>
+
+  <main id="main" class="main">
+    <ul id="task-list" class="task-list" aria-live="polite"></ul>
+    <div id="empty" class="empty" hidden>
+      <span class="sticker sky empty-sticker" aria-hidden="true">✓ פנוי</span>
+      <p id="empty-text">אין משימות כאן</p>
+      <small>אפשר להוסיף משימה בשדה למטה</small>
+    </div>
+  </main>
+
+  <div class="bottom">
+    <form id="add-form" class="add-form" autocomplete="off">
+      <input id="add-input" class="add-input" type="text" enterkeyhint="done"
+             placeholder="משימה חדשה להיום…" aria-label="משימה חדשה" maxlength="300">
+      <button class="add-btn" type="submit" aria-label="הוספה"><span class="plus" aria-hidden="true">+</span></button>
+    </form>
+    <nav class="tabs" role="tablist" aria-label="קטגוריות">
+      <button class="tab" role="tab" data-cat="today">היום<span class="badge"></span></button>
+      <button class="tab" role="tab" data-cat="tomorrow">מחר<span class="badge"></span></button>
+      <button class="tab" role="tab" data-cat="week">השבוע<span class="badge"></span></button>
+      <button class="tab" role="tab" data-cat="later">להמשך<span class="badge"></span></button>
+    </nav>
+  </div>
+
+  <!-- Quick move popover -->
+  <div id="move-pop" class="move-pop" role="menu" hidden></div>
+
+  <!-- Task details sheet -->
+  <dialog id="sheet" class="sheet" aria-labelledby="sheet-title-label">
+    <form method="dialog" class="sheet-inner" id="sheet-form">
+      <div class="sheet-handle" aria-hidden="true"></div>
+      <div class="sheet-head">
+        <button type="button" id="sheet-done-toggle" class="check big" aria-label="סימון כהושלמה"></button>
+        <label id="sheet-title-label" class="sr-only" for="sheet-title">כותרת</label>
+        <textarea id="sheet-title" class="sheet-title" rows="1" maxlength="300" placeholder="כותרת המשימה"></textarea>
+        <button type="submit" class="icon-btn" aria-label="סגירה">✕</button>
+      </div>
+
+      <div class="field">
+        <span class="field-label">קטגוריה</span>
+        <div id="sheet-cats" class="segment" role="radiogroup" aria-label="קטגוריה"></div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="sheet-desc">תיאור</label>
+        <textarea id="sheet-desc" class="sheet-desc" rows="1" placeholder="פרטים, הערות, קישורים…"></textarea>
+      </div>
+
+      <div class="field">
+        <span class="field-label">תתי משימות <span id="sub-count" class="muted"></span></span>
+        <ul id="sub-list" class="sub-list"></ul>
+        <div class="sub-add">
+          <input id="sub-input" type="text" enterkeyhint="done" placeholder="הוספת תת-משימה…" maxlength="300" aria-label="תת-משימה חדשה">
+          <button type="button" id="sub-add-btn" class="small-btn" aria-label="הוספת תת-משימה">+</button>
+        </div>
+      </div>
+
+      <button type="button" id="sheet-delete" class="danger-btn">🗑️ מחיקת המשימה</button>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" hidden>
+    <span id="toast-text"></span>
+    <button id="toast-action" type="button"></button>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
